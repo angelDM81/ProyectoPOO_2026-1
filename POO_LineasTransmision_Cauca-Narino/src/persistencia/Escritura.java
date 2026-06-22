@@ -50,7 +50,7 @@ public class Escritura {
         }
     }
     
-    public void actualizarArchivoLineasDeTransmision(ArrayList<LineaTransmision> listaDeLineas){
+    public static void actualizarArchivoLineasDeTransmision(ArrayList<LineaTransmision> listaDeLineas){
         
         File out = new File("data\\dataLineas.csv");
         

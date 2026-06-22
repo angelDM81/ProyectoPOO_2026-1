@@ -6,6 +6,10 @@ package vista;
 
 import controlador.ContraladorSubestacion;
 import controlador.ControladorLinea;
+import java.util.ArrayList;
+import modelo.LineaTransmision;
+import persistencia.Escritura;
+
 
 /**
  *
@@ -18,10 +22,173 @@ public class GUI extends javax.swing.JFrame {
     private ContraladorSubestacion contraladorSubE = new ContraladorSubestacion();
     private PanelLinea panelLinea = new PanelLinea();
     private PanelSubEstacion panelSubE = new PanelSubEstacion();
+    private String idSelec;
     private Mapa mapa=new Mapa();
+    
+    //aqui se usa tableRowSorter que es un motor de java swing que se encarga de ordenar y filtrar de manera visual las filas de una tabla, sin modificar los datos originales
+    private javax.swing.table.TableRowSorter sorter = (javax.swing.table.TableRowSorter) panelLinea.getJTable2().getRowSorter();
 
     public GUI() {
         initComponents();
+    }
+    
+    private void aplicarFiltros() {
+    
+  
+        //DECLARAMOS SORTER FUERA DEL CONDICIONAL PARA ASIGNARLE UN VALOR SEGUN LA TABLA ABIERTA
+        javax.swing.table.TableRowSorter<?> sorter = null;
+        //usamos el if else if para asignarle un valor al sorter
+        if(panelLinea.getJTable2().isShowing()){
+        sorter = (javax.swing.table.TableRowSorter) panelLinea.getJTable2().getRowSorter();
+        }
+        else if(panelSubE.getJTable1().isShowing()){
+        sorter = (javax.swing.table.TableRowSorter) panelSubE.getJTable1().getRowSorter(); 
+        }
+        
+        if (sorter != null) {
+        
+            //Se crea un arraylist encargado de almacenar todos los filtros individuales que se encuentren activos
+            //El "RowFilter<Object, Object>" indica que los filtros trabajarán con cualquier tipo de modelo de tabla (filas y datos genéricos).
+            //Esta lista nos permite acumular el filtro de texto (ID) y el filtro del ComboBox (Voltaje) para procesarlos juntos después.
+            java.util.List<javax.swing.RowFilter<Object, Object>> listaFiltros = new java.util.ArrayList<>();
+
+            //textoBusqueda recolecta lo que el usuario escribe y elimina los espacios que hay
+           String textoBusqueda = jTextField1.getText().trim();
+            
+            //este if es para que cuando el text field este vacio, no haya filtros y se muestren todas las filas
+            if (!textoBusqueda.isEmpty()) {
+                
+                //regex = regular expresions
+                String regexId;
+                
+                //El .* evalua si hay un caracter escrito sobre el textField, cualquiera, puede ser una letra o un simbolo, pero evalua que haya algo sobre el textField
+                //El \\d evalua si hay un numero despues de la secuencia de caracteres que se haya escrito previamente o del caracter que se haya escrito
+                //El $ lo que hace es evaluar si despues del numero ya se acabo el texto
+                //Si se cumplen las tres condiciones mencionadas anteriormente el if lanza verdadero y entra en el
+                //En pocas palabras, este if se encarga de evaluar si el texto termino en un numero
+                if (textoBusqueda.matches(".*\\d+$")) {
+                    
+                    //la expresion de busqueda va a estar compuesta de la siguiente regla:
+                    //El (?i) lo que hace es que ignora mayusculas/minusculas
+                    //El ^ lo que hace es que la busqueda se haga de manera ordenada de izquierda a derecha, tal cual se escribio en el textField
+                    //El (?!\\) lo que hace es que bloquea la busqueda si el caracter es otro numero, es decir, si busco LT-1, no me va a aparecer LT-10, etc
+                    //el textoBusqueda es el texto al cual se le aplican las reglas anteriormente dichas
+                    //regex es una variable que va ajustando los filtros de busqueda, a medida que se escriben mas letras
+                    regexId = "(?i)^" + textoBusqueda + "(?!\\d)";
+                    
+                    //else lo que hace es que filtrar la busqueda si todavia no se ha escrito ningun numero
+                } else {
+                    
+                    //El (?i) lo que hace es que ignora mayusculas/minusculas
+                    //El ^ lo que hace es que la busqueda se haga de manera ordenada de izquierda a derecha, tal cual se escribio en el textField
+                    regexId = "(?i)^" + textoBusqueda;
+                }
+               
+                //Esta linea lo que hace es aplicar el filtro de busqueda que se establecio en regex y lo aplica unicamente a la columna de las ID que es lo que nos interes
+                listaFiltros.add(javax.swing.RowFilter.regexFilter(regexId, 0));
+            }
+
+            
+            //Este if evalúa si el usuario seleccionó una opción valida dentro del combobox.
+            //El indice 0 corresponde al texto descriptivo Voltaje Nominal, por lo que si el índice es mayor a 0 
+            //significa que el usuario eligio un voltaje real como 115-110kV o 230-220kV y se debe proceder con el filtro
+            if (jComboBox4.getSelectedIndex() > 0) {
+                
+                //Extrae el objeto seleccionado actualmente en el combobox y lo convierte en una cadena de texto string para poder manipularlo
+                String seleccion = jComboBox4.getSelectedItem().toString();
+                
+                //El metodo replaceAll aplica una expresion regular (regex) para limpiar el texto seleccionado
+                //La expresion [^0-9\\-] sirve para reemplazar cualquier caracter que no sea un numero por "", ya que la expresion ^0-9 significa que va a buscar todo lo que no sea un numero
+                //y el \\- sirve para indicar que tambien se quiere conservar el guion y no se desea reemplazar, se ponen las \\ por delante, debido a que el - indica un rango, entonces para que no lo inteprete como rango 
+                //si no como un caracter que se quiere guardar se ponen las // por delante
+                //En pocas palabras busca cualquier carácter que NO sea un número, ni un guion como las letras kV y lo reemplaza por nada ("")
+                String soloNumeros = seleccion.replaceAll("[^0-9\\-]", "");
+                
+                //Se le aplica a la cadena anterior, para separar los dos valores de voltaje de la Jboombox que estan separados por -, y guardarlos en un arreglo
+                String[] partes = soloNumeros.split("-");
+                
+                //String.join une los elementos del arreglo anterior poniendo entre ambos el caracter "|", que en expresiones regulares significa "O" logico
+                //Al envolverlo entre parentesis se crea una expresion regex que le dira al motor de busqueda que por ejemplo: Encuentre el numero 115 O el número 110
+                String regexVoltaje = "(" + String.join("|", partes) + ")";
+            
+                //Esta linea crea un filtro basado en la expresion regular generada regexVoltaje y lo programa para que busque unicamente en la columna con indice 2 de la tabla, que es donde estan los voltajes
+                //Por ultimo, este filtro se añade a la listaFiltros para que sea tomado en cuenta
+                listaFiltros.add(javax.swing.RowFilter.regexFilter(regexVoltaje, 2));
+            }
+            
+            //Este if evalua si el usuario seleccionó una opción valida dentro del combobox
+            //El indice 0 corresponde al texto descriptivo Seleccionar Departamento, por lo que si el índice es mayor a 0 
+            //significa que el usuario eligio un departamento como Nariño o Huila y se debe proceder con el filtro
+            if (jComboBox1.getSelectedIndex() > 0) { 
+    
+                //Se extrae el nombre del departamento seleccionado
+                String deptoSeleccionado = jComboBox1.getSelectedItem().toString();
+                
+                //El metodo replaceAll aplica una regla para modificar la cadena de texto del departamento seleccionado
+                //La expresión [ñÑ] busca cualquier coincidencia de la letra ñ (ya sea minúscula o mayúscula)
+                //El segundo parametro "." reemplaza esa ñ por un punto físico en la cadena de la expresión regular, esto es porque en regex, el punto es un comodin universal que representa cualquier carácter
+                //Se hace esto como una estrategia ante errores de codificación, por si el archivo CSV cargo la palabra "Nariño" con un carácter corrupto o extraño en la tabla, al buscar con el comodin "Nari.o"
+                //el motor ignorará el defecto del carácter central, validara la fila como correcta y evitará que la tabla se quede en blanco.
+                String deptoRegexTolerante = deptoSeleccionado.replaceAll("[ñÑ]", ".");
+                
+                //Se crea la regla expresión regular
+                //El (?i) sirve para ignorar mayúsculas y minusculas por seguridad
+                //El ^ asegura que coincida exactamente desde el inicio del texto en la celda
+                String regexDepto = "(?i)^" + deptoRegexTolerante;
+    
+                //Se crea el filtro y se aplica a la columna de Departamentos
+                //Finalmente, se suma a la lista de filtros acumulados
+                if(panelLinea.getJTable2().isShowing()){
+                listaFiltros.add(javax.swing.RowFilter.regexFilter(regexDepto, 3));
+                }
+                else{
+                listaFiltros.add(javax.swing.RowFilter.regexFilter(regexDepto, 2));
+                }
+            }
+
+            if (listaFiltros.isEmpty()) {
+                // Si la lista está vacía, no hay texto ni combobox seleccionado, se limpia la tabla de cualquier condicion que tenga y se mostraran todas las lineas
+                sorter.setRowFilter(null);
+            } else {
+                
+                //Si la lista contiene uno o mas filtros, el método "andFilter" toma la lista completa de filtros y los unifica bajo un AND o &&
+                //Esto obliga a la tabla a mostrar únicamente las filas que cumplan con todas las condiciones activas al mismo tiempo
+                sorter.setRowFilter(javax.swing.RowFilter.andFilter(listaFiltros));
+            }
+            
+            jLabel6.setText(panelLinea.getJTable2().getRowCount()+"");
+            jLabel10.setText(String.format("%.2f KM", contraladorLinea.calcularLongitudTotal(panelLinea.getJTable2())));
+            jLabel8.setText(String.format("%.2f MW", contraladorLinea.calcularCapacidadTotal(panelLinea.getJTable2())));
+        }
+    }
+    
+    public void activarPanelLineas(){
+        jLabel7.setVisible(true);
+        jLabel8.setVisible(true);
+        jLabel9.setVisible(true);
+        jLabel10.setVisible(true);
+        jPanel2.setVisible(true); 
+        jPanel3.setVisible(true);
+                //el removeAll lo que hace es que borra cualquier panel que estuviera abierto antes de presionar el boton
+        panelContenedor.removeAll();
+        
+        //esta linea lo que hace es agregar el panel panelLinea y se le indica a java que el panel ocupe todo el espacio disponible del centro sin dejar bordes
+        panelContenedor.add(panelLinea, java.awt.BorderLayout.CENTER);
+    
+        //revalidate le dice a java que recalcule los tamaños y las estructuras de los componentes para que no haya problemas
+        panelContenedor.revalidate();
+        //repaint le dice a java que borre todos los pixeles viejos y pinte los nuevos pixeles del panel panelLinea
+        panelContenedor.repaint();
+        sorter.setRowFilter(null);
+        jLabel4.setText("Lineas de Transmision");
+        jLabel5.setText("Total de Lineas");
+        jLabel6.setText(contraladorLinea.obtenerNumeroDeLineas()+"");
+        jLabel7.setText("Capacidad Total");
+        jLabel8.setText(String.format("%.2f MW", contraladorLinea.calcularCapacidadTotal(panelLinea.getJTable2())));
+        jLabel9.setText("Longitud total");
+        jLabel10.setText(String.format("%.2f KM", contraladorLinea.calcularLongitudTotal(panelLinea.getJTable2())));
+    
+
     }
 
     @SuppressWarnings("unchecked")
@@ -38,10 +205,13 @@ public class GUI extends javax.swing.JFrame {
         jButton4 = new javax.swing.JButton();
         jButton6 = new javax.swing.JButton();
         jButton9 = new javax.swing.JButton();
-        jButton10 = new javax.swing.JButton();
         jLabel16 = new javax.swing.JLabel();
         jButton11 = new javax.swing.JButton();
         jButton12 = new javax.swing.JButton();
+        jLabel17 = new javax.swing.JLabel();
+        jButton13 = new javax.swing.JButton();
+        jButton14 = new javax.swing.JButton();
+        jButton1 = new javax.swing.JButton();
         jPanel11 = new javax.swing.JPanel();
         jLabel4 = new javax.swing.JLabel();
         jPanel12 = new javax.swing.JPanel();
@@ -57,8 +227,8 @@ public class GUI extends javax.swing.JFrame {
         jPanel14 = new javax.swing.JPanel();
         jLabel24 = new javax.swing.JLabel();
         jTextField1 = new javax.swing.JTextField();
+        jComboBox4 = new javax.swing.JComboBox<>();
         jComboBox1 = new javax.swing.JComboBox<>();
-        jComboBox2 = new javax.swing.JComboBox<>();
         panelContenedor = new javax.swing.JPanel();
 
         javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
@@ -121,11 +291,8 @@ public class GUI extends javax.swing.JFrame {
         jButton9.setText("Mostrar mapa");
         jButton9.addActionListener(this::jButton9ActionPerformed);
 
-        jButton10.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jButton10.setText("Capacidad total");
-
         jLabel16.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel16.setText("Busqueda");
+        jLabel16.setText("Crear");
 
         jButton11.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jButton11.setText("Lineas");
@@ -133,6 +300,19 @@ public class GUI extends javax.swing.JFrame {
 
         jButton12.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jButton12.setText("Subestaciones");
+
+        jLabel17.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jLabel17.setText("Eliminar");
+
+        jButton13.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jButton13.setText("Lineas");
+        jButton13.addActionListener(this::jButton13ActionPerformed);
+
+        jButton14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
+        jButton14.setText("Subestaciones");
+
+        jButton1.setText("CONFIRMAR");
+        jButton1.addActionListener(this::jButton1ActionPerformed);
 
         javax.swing.GroupLayout jPanel10Layout = new javax.swing.GroupLayout(jPanel10);
         jPanel10.setLayout(jPanel10Layout);
@@ -144,12 +324,22 @@ public class GUI extends javax.swing.JFrame {
                     .addComponent(jLabel15, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jButton4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jButton6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jButton9, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jButton10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jButton9, javax.swing.GroupLayout.DEFAULT_SIZE, 125, Short.MAX_VALUE)
                     .addComponent(jLabel16, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jButton11, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jButton12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jButton12, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabel17, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jButton13, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
+            .addGroup(jPanel10Layout.createSequentialGroup()
+                .addGap(17, 17, 17)
+                .addComponent(jButton1)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel10Layout.createSequentialGroup()
+                    .addContainerGap()
+                    .addComponent(jButton14, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addContainerGap()))
         );
         jPanel10Layout.setVerticalGroup(
             jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -162,15 +352,24 @@ public class GUI extends javax.swing.JFrame {
                 .addComponent(jButton6, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jButton9, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jButton10, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jLabel16, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jButton11, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(47, 47, 47)
+                .addComponent(jLabel17, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButton13, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jButton12, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(322, Short.MAX_VALUE))
+                .addGap(52, 52, 52)
+                .addComponent(jButton1)
+                .addContainerGap(161, Short.MAX_VALUE))
+            .addGroup(jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel10Layout.createSequentialGroup()
+                    .addGap(263, 263, 263)
+                    .addComponent(jButton14, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addContainerGap(353, Short.MAX_VALUE)))
         );
 
         jPanel11.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(204, 204, 204)));
@@ -303,6 +502,7 @@ public class GUI extends javax.swing.JFrame {
 
         jTextField1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jTextField1.setCursor(new java.awt.Cursor(java.awt.Cursor.TEXT_CURSOR));
+        jTextField1.addActionListener(this::jTextField1ActionPerformed);
         jTextField1.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 jTextField1KeyReleased(evt);
@@ -310,12 +510,15 @@ public class GUI extends javax.swing.JFrame {
         });
         jPanel14.add(jTextField1);
 
-        jComboBox1.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", " " }));
-        jPanel14.add(jComboBox1);
+        jComboBox4.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Seleccionar Voltaje Nominal", "115-110kV", "230-220kV" }));
+        jComboBox4.setToolTipText("");
+        jComboBox4.setAutoscrolls(true);
+        jComboBox4.addActionListener(this::jComboBox4ActionPerformed);
+        jPanel14.add(jComboBox4);
 
-        jComboBox2.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", " " }));
-        jPanel14.add(jComboBox2);
+        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Seleccionar Departamento", "Cauca", "Valle del Cauca", "Nariño", "Huila" }));
+        jComboBox1.addActionListener(this::jComboBox1ActionPerformed);
+        jPanel14.add(jComboBox1);
 
         panelContenedor.setLayout(new java.awt.BorderLayout());
 
@@ -362,32 +565,7 @@ public class GUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-       
-        jLabel7.setVisible(true);
-        jLabel8.setVisible(true);
-        jLabel9.setVisible(true);
-        jLabel10.setVisible(true);
-        jPanel2.setVisible(true); 
-        jPanel3.setVisible(true);
-        
-        jLabel4.setText("Lineas de Transmision");
-        jLabel5.setText("Total de Lineas");
-        jLabel6.setText(contraladorLinea.obtenerNumeroDeLineas()+"");
-        jLabel7.setText("Capacidad Total");
-        jLabel8.setText(String.format("%.2f MW", contraladorLinea.calcularCapacidadTotal()));
-        jLabel9.setText("Longitud total");
-        jLabel10.setText(String.format("%.2f KM", contraladorLinea.calcularLongitudTotal()));
-    
-        //el removeAll lo que hace es que borra cualquier panel que estuviera abierto antes de presionar el boton
-        panelContenedor.removeAll();
-        
-        //esta linea lo que hace es agregar el panel panelLinea y se le indica a java que el panel ocupe todo el espacio disponible del centro sin dejar bordes
-        panelContenedor.add(panelLinea, java.awt.BorderLayout.CENTER);
-    
-        //revalidate le dice a java que recalcule los tamaños y las estructuras de los componentes para que no haya problemas
-        panelContenedor.revalidate();
-        //repaint le dice a java que borre todos los pixeles viejos y pinte los nuevos pixeles del panel panelLinea
-        panelContenedor.repaint();
+       activarPanelLineas();
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
@@ -403,56 +581,12 @@ public class GUI extends javax.swing.JFrame {
 
     private void jTextField1KeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField1KeyReleased
         
-        //textoBusqueda recolecta lo que el usuario escribe y elimina los espacios que hay
-        String textoBusqueda = jTextField1.getText().trim();
-    
-        //aqui se usa tableRowSorter que es un motor de java swing que se encarga de ordenar y filtrar de manera visual las filas de una tabla, sin modificar los datos originales
-        javax.swing.table.TableRowSorter sorter = (javax.swing.table.TableRowSorter) panelLinea.getJTable2().getRowSorter();
-    
-        if (sorter != null) {
-            
-            //este if es para que cuando el text field este vacio, no haya filtros y se muestren todas las filas
-            if (textoBusqueda.isEmpty()) {
-                sorter.setRowFilter(null);
-            } else {
-                
-                //regex = regular expresions
-                String regex;
-            
-                //El .* evalua si hay un caracter escrito sobre el textField, cualquiera, puede ser una letra o un simbolo, pero evalua que haya algo sobre el textField
-                //El \\d evalua si hay un numero despues de la secuencia de caracteres que se haya escrito previamente o del caracter que se haya escrito
-                //El $ lo que hace es evaluar si despues del numero ya se acabo el texto
-                //Si se cumplen las tres condiciones mencionadas anteriormente el if lanza verdadero y entra en el
-                //En pocas palabras, este if se encarga de evaluar si el texto termino en un numero
-                if (textoBusqueda.matches(".*\\d+$")) {
-                    
-                    //la expresion de busqueda va a estar compuesta de la siguiente regla:
-                    //El (?i) lo que hace es que ignora mayusculas/minusculas
-                    //El ^ lo que hace es que la busqueda se haga de manera ordenada de izquierda a derecha, tal cual se escribio en el textField
-                    //El (?!\\) lo que hace es que bloquea la busqueda si el caracter es otro numero, es decir, si busco LT-1, no me va a aparecer LT-10, etc
-                    //el textoBusqueda es el texto al cual se le aplican las reglas anteriormente dichas
-                    //regex es una variable que va ajustando los filtros de busqueda, a medida que se escriben mas letras
-                    regex = "(?i)^" + textoBusqueda + "(?!\\d)";
-                    
-                    //else lo que hace es que filtrar la busqueda si todavia no se ha escrito ningun numero
-                } else {
-                    
-                    //El (?i) lo que hace es que ignora mayusculas/minusculas
-                    //El ^ lo que hace es que la busqueda se haga de manera ordenada de izquierda a derecha, tal cual se escribio en el textField
-                    regex = "(?i)^" + textoBusqueda;
-                }
-            
-                //Esta linea lo que hace es aplicar el filtro de busqueda que se establecio en regex y lo aplica unicamente a la columna de las ID que es lo que nos interesa 
-                sorter.setRowFilter(javax.swing.RowFilter.regexFilter(regex, 0));
-            }
-        }
+        aplicarFiltros();
     }//GEN-LAST:event_jTextField1KeyReleased
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
         // TODO add your handling code here:
-        jLabel4.setText("SubEstaciones");
-        jLabel5.setText("Total de SubEstaciones");
-        jLabel6.setText(contraladorSubE.obtenerNumeroDeSubestaciones()+"");
+
         //borra los paneles donde estaba anteriormente la carga total y longitud recorrida
         jLabel7.setVisible(false);
         jLabel8.setVisible(false);
@@ -460,6 +594,13 @@ public class GUI extends javax.swing.JFrame {
         jLabel10.setVisible(false);
         jPanel2.setVisible(false); 
         jPanel3.setVisible(false);
+                //borro el combobox de voltaje nominal
+        jComboBox4.setVisible(false);
+        jLabel4.setText("SubEstaciones");
+        jLabel5.setText("Total de SubEstaciones");
+        jLabel6.setText(contraladorSubE.obtenerNumeroDeSubestaciones()+"");
+        sorter.setRowFilter(null);
+
         panelContenedor.removeAll();
         
         panelContenedor.add(panelSubE, java.awt.BorderLayout.CENTER);
@@ -468,6 +609,68 @@ public class GUI extends javax.swing.JFrame {
         panelContenedor.repaint();
         
     }//GEN-LAST:event_jButton6ActionPerformed
+
+    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField1ActionPerformed
+
+    private void jComboBox4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox4ActionPerformed
+        
+       aplicarFiltros();
+        
+    }//GEN-LAST:event_jComboBox4ActionPerformed
+
+    private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
+        aplicarFiltros();
+    }//GEN-LAST:event_jComboBox1ActionPerformed
+
+    private void jButton13ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton13ActionPerformed
+        // TODO add your handling code here:
+        //activa el panel de lineas para seleccionar la de borrar
+        activarPanelLineas();
+       
+    }//GEN-LAST:event_jButton13ActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        // TODO add your handling code here:
+        //este es el boton confirmar asi q haria falta desasctivar el botona  menos que le de a eliminar lineas, ya q esta activo todo el tiempo, se me olvido
+        //creamos el objeto para luego eliminarlo del arraylist
+        LineaTransmision indextemp=null;
+         int filaSeleccionada = panelLinea.getJTable2().getSelectedRow();
+    
+    // Si no hay ninguna fila seleccionada, devolvemos 
+    if (filaSeleccionada == -1) {
+        return;
+    }
+    
+   
+    // de la vista al índice real del modelo para no pasar el dato equivocado.
+    int filaModelo = panelLinea.getJTable2().convertRowIndexToModel(filaSeleccionada);
+    
+    //con esto hallamos la id de la linea seleccionada
+    idSelec = panelLinea.getJTable2().getModel().getValueAt(filaModelo, 0).toString();
+       
+        /*creamos arraylist temporal para eliminar linea y pasarlo a reescribir el csv*/
+                ArrayList<LineaTransmision> temp = new ArrayList<>();
+        temp=contraladorLinea.obtenerLineaTransmision();
+        for(LineaTransmision index: temp){
+            if(index.getInformacionBasica().getID().equals(idSelec)){
+        indextemp=index;
+            }
+        }
+        //toca esperar a terminar el for each para poder eliminar el objeto pq lanza erroe si intentas eliminarlo dentro del ciclo, poe eso se crea la variable temp de indextemp
+        temp.remove(indextemp);
+        Escritura.actualizarArchivoLineasDeTransmision(temp);
+            //usado el llenar tabla para actualizar la tabla en tiempo real
+        panelLinea.llenarTabla();
+        //usados para actualizar los valores de longitud y capacidad en tiempo real
+        jLabel5.setText("Total de Lineas");
+        jLabel6.setText(contraladorLinea.obtenerNumeroDeLineas()+"");
+        jLabel7.setText("Capacidad Total");
+        jLabel8.setText(String.format("%.2f MW", contraladorLinea.calcularCapacidadTotal(panelLinea.getJTable2())));
+        jLabel9.setText("Longitud total");
+        jLabel10.setText(String.format("%.2f KM", contraladorLinea.calcularLongitudTotal(panelLinea.getJTable2())));
+    }//GEN-LAST:event_jButton1ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -495,19 +698,22 @@ public class GUI extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButton10;
+    private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton11;
     private javax.swing.JButton jButton12;
+    private javax.swing.JButton jButton13;
+    private javax.swing.JButton jButton14;
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton6;
     private javax.swing.JButton jButton9;
     private javax.swing.JComboBox<String> jComboBox1;
-    private javax.swing.JComboBox<String> jComboBox2;
+    private javax.swing.JComboBox<String> jComboBox4;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
+    private javax.swing.JLabel jLabel17;
     private javax.swing.JLabel jLabel24;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
