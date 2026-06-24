@@ -2,6 +2,7 @@
 package modelo;
 
 import java.util.ArrayList;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 public class Subestacion {
@@ -10,6 +11,7 @@ public class Subestacion {
     private String nombre;
     private ArrayList<Double> voltajeNominalDeOperacion;
     private ArrayList<String> operadores;
+    private ArrayList<LineaTransmision> lineasRelacionadas;
     private Ubicacion ubicacion;
     private double latitud;
     private double longitud;
@@ -22,6 +24,7 @@ public class Subestacion {
         this.ubicacion=ubicacion;
         this.latitud=latitud;
         this.longitud=longitud;
+        this.lineasRelacionadas = new ArrayList<>();
     }
     
     public String toCSV(){
@@ -33,7 +36,7 @@ public class Subestacion {
         String operadores = String.join(" - ", this.operadores);
         
         //se concatenan toda la informacion de la subestacion en un solo string que va a ser retornando, siendo que cada valor esta separado por un ;
-        String linea = this.nombre+";"+voltajeNominalDeOperacion+";"+operadores+";"+this.ubicacion.getDepartamento()+";"+this.ubicacion.getMunicipio()+";"+this.ubicacion.getSubAreaOperativa();
+        String linea = this.id+";"+this.nombre+";"+voltajeNominalDeOperacion+";"+operadores+";"+this.ubicacion.getDepartamento()+";"+this.ubicacion.getMunicipio()+";"+this.ubicacion.getSubAreaOperativa();
         
         return linea;
     }
@@ -46,6 +49,21 @@ public class Subestacion {
     public ArrayList<String> getOperadores(){ return operadores; }
     public double getLatitud(){ return latitud; }
     public double getLongitud(){ return longitud; }
+    public String getLineasRelacionadas(){ 
+        
+        StringJoiner joiner = new StringJoiner("-");
+        
+        for(LineaTransmision linea: lineasRelacionadas){
+            if(linea!=null && linea.getInformacionBasica().getNombre()!=null){
+                joiner.add(linea.getInformacionBasica().getNombre());
+            }
+        }
+        
+        String linea = joiner.toString();
+                
+        return linea;
+    
+    }
    
     
     //setters
@@ -55,5 +73,6 @@ public class Subestacion {
     public void setOperadores(String operador){ this.operadores.add(operador); }
     public void setLatitud(double latitud){ this.latitud=latitud; }
     public void setLongitud(double longitud){ this.longitud=longitud; }
+    public void agregarLinea(LineaTransmision linea){ this.lineasRelacionadas.add(linea); }
     
 }

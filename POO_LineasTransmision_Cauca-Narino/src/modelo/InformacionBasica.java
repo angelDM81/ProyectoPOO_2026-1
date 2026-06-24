@@ -1,7 +1,6 @@
 package modelo;
 
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 public class InformacionBasica {
     
@@ -15,7 +14,7 @@ public class InformacionBasica {
     private String tipoDeLinea;
     private String acuerdoDeConexionCompartida;
     
-    public InformacionBasica(String id, String nombre, String operador, String estado, String FPO, String tipoDeConexion, ArrayList subestacionesRelacionadas, String tipoDeLinea, String acuerdoDeConexionCompartida){
+    public InformacionBasica(String id, String nombre, String operador, String estado, String FPO, String tipoDeConexion, ArrayList<String> subestacionesRelacionadas, String tipoDeLinea, String acuerdoDeConexionCompartida){
         this.id=id;
         this.nombre=nombre;
         this.estado=estado;

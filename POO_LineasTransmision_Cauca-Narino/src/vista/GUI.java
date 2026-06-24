@@ -1,25 +1,14 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
+
 package vista;
 
-import controlador.ContraladorSubestacion;
+import controlador.ControladorSubestacion;
 import controlador.ControladorLinea;
-import java.util.ArrayList;
-import modelo.LineaTransmision;
-import persistencia.Escritura;
 
-
-/**
- *
- * @author W11
- */
 public class GUI extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(GUI.class.getName());
     private ControladorLinea contraladorLinea = new ControladorLinea();
-    private ContraladorSubestacion contraladorSubE = new ContraladorSubestacion();
+    private ControladorSubestacion contraladorSubE = new ControladorSubestacion();
     private PanelLinea panelLinea = new PanelLinea();
     private PanelSubEstacion panelSubE = new PanelSubEstacion();
     private String idSelec;
@@ -30,6 +19,11 @@ public class GUI extends javax.swing.JFrame {
 
     public GUI() {
         initComponents();
+        jPanel1.setVisible(false);
+        jPanel2.setVisible(false);
+        jPanel3.setVisible(false);
+        jPanel11.setVisible(false);
+        jButton1.setVisible(false);
     }
     
     private void aplicarFiltros() {
@@ -39,10 +33,10 @@ public class GUI extends javax.swing.JFrame {
         javax.swing.table.TableRowSorter<?> sorter = null;
         //usamos el if else if para asignarle un valor al sorter
         if(panelLinea.getJTable2().isShowing()){
-        sorter = (javax.swing.table.TableRowSorter) panelLinea.getJTable2().getRowSorter();
+            sorter = (javax.swing.table.TableRowSorter) panelLinea.getJTable2().getRowSorter();
         }
         else if(panelSubE.getJTable1().isShowing()){
-        sorter = (javax.swing.table.TableRowSorter) panelSubE.getJTable1().getRowSorter(); 
+            sorter = (javax.swing.table.TableRowSorter) panelSubE.getJTable1().getRowSorter(); 
         }
         
         if (sorter != null) {
@@ -139,10 +133,10 @@ public class GUI extends javax.swing.JFrame {
                 //Se crea el filtro y se aplica a la columna de Departamentos
                 //Finalmente, se suma a la lista de filtros acumulados
                 if(panelLinea.getJTable2().isShowing()){
-                listaFiltros.add(javax.swing.RowFilter.regexFilter(regexDepto, 3));
+                    listaFiltros.add(javax.swing.RowFilter.regexFilter(regexDepto, 3));
                 }
                 else{
-                listaFiltros.add(javax.swing.RowFilter.regexFilter(regexDepto, 2));
+                    listaFiltros.add(javax.swing.RowFilter.regexFilter(regexDepto, 2));
                 }
             }
 
@@ -163,13 +157,17 @@ public class GUI extends javax.swing.JFrame {
     }
     
     public void activarPanelLineas(){
+        panelLinea.llenarTabla();
+        jPanel11.setVisible(true);
+        jPanel1.setVisible(true);
         jLabel7.setVisible(true);
         jLabel8.setVisible(true);
         jLabel9.setVisible(true);
         jLabel10.setVisible(true);
         jPanel2.setVisible(true); 
         jPanel3.setVisible(true);
-                //el removeAll lo que hace es que borra cualquier panel que estuviera abierto antes de presionar el boton
+        jComboBox4.setVisible(true);
+        //el removeAll lo que hace es que borra cualquier panel que estuviera abierto antes de presionar el boton
         panelContenedor.removeAll();
         
         //esta linea lo que hace es agregar el panel panelLinea y se le indica a java que el panel ocupe todo el espacio disponible del centro sin dejar bordes
@@ -188,6 +186,33 @@ public class GUI extends javax.swing.JFrame {
         jLabel9.setText("Longitud total");
         jLabel10.setText(String.format("%.2f KM", contraladorLinea.calcularLongitudTotal(panelLinea.getJTable2())));
     
+
+    }
+        public void activarPanelSubestaciones(){
+        //actualiza lod datos
+        panelSubE.llenarTabla();
+         //borra los paneles donde estaba anteriormente la carga total y longitud recorrida
+        jLabel7.setVisible(false);
+        jLabel8.setVisible(false);
+        jLabel9.setVisible(false);
+        jLabel10.setVisible(false);
+        jPanel2.setVisible(false); 
+        jPanel3.setVisible(false);
+        jPanel1.setVisible(true);
+        jPanel11.setVisible(true);
+        //borro el combobox de voltaje nominal
+        jComboBox4.setVisible(false);
+        jLabel4.setText("SubEstaciones");
+        jLabel5.setText("Total de SubEstaciones");
+        jLabel6.setText(contraladorSubE.obtenerNumeroDeSubestaciones()+"");
+        sorter.setRowFilter(null);
+
+        panelContenedor.removeAll();
+        
+        panelContenedor.add(panelSubE, java.awt.BorderLayout.CENTER);
+    
+        panelContenedor.revalidate();
+        panelContenedor.repaint();
 
     }
 
@@ -292,7 +317,7 @@ public class GUI extends javax.swing.JFrame {
         jButton9.addActionListener(this::jButton9ActionPerformed);
 
         jLabel16.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
-        jLabel16.setText("Crear");
+        jLabel16.setText("Registrar");
 
         jButton11.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jButton11.setText("Lineas");
@@ -300,6 +325,7 @@ public class GUI extends javax.swing.JFrame {
 
         jButton12.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jButton12.setText("Subestaciones");
+        jButton12.addActionListener(this::jButton12ActionPerformed);
 
         jLabel17.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jLabel17.setText("Eliminar");
@@ -310,6 +336,7 @@ public class GUI extends javax.swing.JFrame {
 
         jButton14.setFont(new java.awt.Font("Segoe UI", 0, 14)); // NOI18N
         jButton14.setText("Subestaciones");
+        jButton14.addActionListener(this::jButton14ActionPerformed);
 
         jButton1.setText("CONFIRMAR");
         jButton1.addActionListener(this::jButton1ActionPerformed);
@@ -364,7 +391,7 @@ public class GUI extends javax.swing.JFrame {
                 .addComponent(jButton12, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(52, 52, 52)
                 .addComponent(jButton1)
-                .addContainerGap(161, Short.MAX_VALUE))
+                .addContainerGap(165, Short.MAX_VALUE))
             .addGroup(jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(jPanel10Layout.createSequentialGroup()
                     .addGap(263, 263, 263)
@@ -566,6 +593,8 @@ public class GUI extends javax.swing.JFrame {
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
        activarPanelLineas();
+       ///oculta confirmar
+       jButton1.setVisible(false);
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
@@ -576,7 +605,15 @@ public class GUI extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton9ActionPerformed
 
     private void jButton11ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton11ActionPerformed
-        // TODO add your handling code here:
+        jButton1.setVisible(false);
+        
+        RegistroLinea ventanaFormulario = new RegistroLinea(this, true);
+
+        ventanaFormulario.setLocationRelativeTo(this);
+
+        ventanaFormulario.setVisible(true);
+        
+        
     }//GEN-LAST:event_jButton11ActionPerformed
 
     private void jTextField1KeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextField1KeyReleased
@@ -586,27 +623,10 @@ public class GUI extends javax.swing.JFrame {
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
         // TODO add your handling code here:
-
-        //borra los paneles donde estaba anteriormente la carga total y longitud recorrida
-        jLabel7.setVisible(false);
-        jLabel8.setVisible(false);
-        jLabel9.setVisible(false);
-        jLabel10.setVisible(false);
-        jPanel2.setVisible(false); 
-        jPanel3.setVisible(false);
-                //borro el combobox de voltaje nominal
-        jComboBox4.setVisible(false);
-        jLabel4.setText("SubEstaciones");
-        jLabel5.setText("Total de SubEstaciones");
-        jLabel6.setText(contraladorSubE.obtenerNumeroDeSubestaciones()+"");
-        sorter.setRowFilter(null);
-
-        panelContenedor.removeAll();
-        
-        panelContenedor.add(panelSubE, java.awt.BorderLayout.CENTER);
-    
-        panelContenedor.revalidate();
-        panelContenedor.repaint();
+        //oculta confirmar
+        jButton1.setVisible(false);
+        //muestra en pantalla la tabla de datos de subestaciones
+        activarPanelSubestaciones();
         
     }//GEN-LAST:event_jButton6ActionPerformed
 
@@ -628,53 +648,76 @@ public class GUI extends javax.swing.JFrame {
         // TODO add your handling code here:
         //activa el panel de lineas para seleccionar la de borrar
         activarPanelLineas();
+        jButton1.setVisible(true);
        
     }//GEN-LAST:event_jButton13ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        // TODO add your handling code here:
-        //este es el boton confirmar asi q haria falta desasctivar el botona  menos que le de a eliminar lineas, ya q esta activo todo el tiempo, se me olvido
+
+        if(panelLinea.getJTable2().isShowing()){
+        //este es el boton confirmar asi q haria falta desasctivar el boton a menos que le de a eliminar lineas, ya q esta activo todo el tiempo, se me olvido
         //creamos el objeto para luego eliminarlo del arraylist
-        LineaTransmision indextemp=null;
-         int filaSeleccionada = panelLinea.getJTable2().getSelectedRow();
+        int filaSeleccionada = panelLinea.getJTable2().getSelectedRow();
     
-    // Si no hay ninguna fila seleccionada, devolvemos 
-    if (filaSeleccionada == -1) {
-        return;
-    }
-    
-   
-    // de la vista al índice real del modelo para no pasar el dato equivocado.
-    int filaModelo = panelLinea.getJTable2().convertRowIndexToModel(filaSeleccionada);
-    
-    //con esto hallamos la id de la linea seleccionada
-    idSelec = panelLinea.getJTable2().getModel().getValueAt(filaModelo, 0).toString();
-       
-        /*creamos arraylist temporal para eliminar linea y pasarlo a reescribir el csv*/
-                ArrayList<LineaTransmision> temp = new ArrayList<>();
-        temp=contraladorLinea.obtenerLineaTransmision();
-        for(LineaTransmision index: temp){
-            if(index.getInformacionBasica().getID().equals(idSelec)){
-        indextemp=index;
-            }
+        // Si no hay ninguna fila seleccionada, devolvemos 
+        if (filaSeleccionada == -1) {
+            return;
         }
-        //toca esperar a terminar el for each para poder eliminar el objeto pq lanza erroe si intentas eliminarlo dentro del ciclo, poe eso se crea la variable temp de indextemp
-        temp.remove(indextemp);
-        Escritura.actualizarArchivoLineasDeTransmision(temp);
-            //usado el llenar tabla para actualizar la tabla en tiempo real
+
+        // de la vista al índice real del modelo para no pasar el dato equivocado.
+        int filaModelo = panelLinea.getJTable2().convertRowIndexToModel(filaSeleccionada);
+    
+        //con esto hallamos la id de la linea seleccionada
+        idSelec = panelLinea.getJTable2().getModel().getValueAt(filaModelo, 0).toString();
+        
+        //se pasa la id de la linea de transmision que se quiere borrar al metodo que se encarga de eliminar la linea
+        contraladorLinea.borrarLinea(idSelec);
+       
+        //usado el llenar tabla para actualizar la tabla en tiempo real
         panelLinea.llenarTabla();
         //usados para actualizar los valores de longitud y capacidad en tiempo real
-        jLabel5.setText("Total de Lineas");
-        jLabel6.setText(contraladorLinea.obtenerNumeroDeLineas()+"");
-        jLabel7.setText("Capacidad Total");
-        jLabel8.setText(String.format("%.2f MW", contraladorLinea.calcularCapacidadTotal(panelLinea.getJTable2())));
-        jLabel9.setText("Longitud total");
-        jLabel10.setText(String.format("%.2f KM", contraladorLinea.calcularLongitudTotal(panelLinea.getJTable2())));
+        activarPanelLineas();
+        }
+        
+        else if(panelSubE.getJTable1().isShowing()){
+            int filaSeleccionada = panelSubE.getJTable1().getSelectedRow();
+        // Si no hay ninguna fila seleccionada, devolvemos 
+        if (filaSeleccionada == -1) {
+            return;
+        }
+                // de la vista al índice real del modelo para no pasar el dato equivocado.
+        int filaModelo = panelSubE.getJTable1().convertRowIndexToModel(filaSeleccionada);
+        //con esto hallamos la id de la linea seleccionada
+        idSelec = panelSubE.getJTable1().getModel().getValueAt(filaModelo, 0).toString();
+                //se pasa la id de la linea de transmision que se quiere borrar al metodo que se encarga de eliminar la linea
+        contraladorSubE.eliminarSubestacion(idSelec);
+       
+        //usado el llenar tabla para actualizar la tabla en tiempo real
+        panelSubE.llenarTabla();
+        activarPanelSubestaciones();
+        }
     }//GEN-LAST:event_jButton1ActionPerformed
 
-    /**
-     * @param args the command line arguments
-     */
+    private void jButton12ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton12ActionPerformed
+        // TODO add your handling code here:
+        activarPanelSubestaciones();
+        jButton1.setVisible(true);
+    }//GEN-LAST:event_jButton12ActionPerformed
+
+    private void jButton14ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton14ActionPerformed
+        // TODO add your handling code here:
+        jButton1.setVisible(false);
+        
+        RegistroSubestacion ventanaFormulario2 = new RegistroSubestacion(this, true);
+
+        ventanaFormulario2.setLocationRelativeTo(this);
+
+        ventanaFormulario2.setVisible(true);
+        
+//boton crear sub
+    }//GEN-LAST:event_jButton14ActionPerformed
+
+        
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
@@ -695,6 +738,8 @@ public class GUI extends javax.swing.JFrame {
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(() -> new GUI().setVisible(true));
+        
+        
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

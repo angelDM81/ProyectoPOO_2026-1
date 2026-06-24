@@ -17,43 +17,45 @@ public class SistemaElectrico {
         lectura.lecturaLineasDeTransmision();
         lectura.lecturaSubestaciones();
         
+        SistemaElectrico sistema = new SistemaElectrico();
+        for(LineaTransmision linea : lineasActivas){
+            sistema.enlazarNuevaLinea(linea);
+        }
+        
         java.awt.EventQueue.invokeLater(() -> {
             GUI ventana = new GUI();
             ventana.setLocationRelativeTo(null); 
             ventana.setVisible(true);
         });
-        
-        
-        
+ 
     }
     
-    public LineaTransmision buscarLineaTransmision(String idLinea){
-        //El stream es como una banda transportadora que agarra cada linea, una por una, y mediante el .filter evalua una condicion
-        //evalua si el ID de la linea (que es una variable temporal de tipo LineaTransmision) es igual a idLinea que es el ID buscado, el equalsIgnoreCase compara dos cadenas pero ignora las mayusculas y minusculas
-        //se ejecuta el .findFirst cuando se encuentra la primera coincidencia, se detiene el stream y se retorna el objeto. Si no se encuentra nada, retorna null
-        return lineasActivas.stream().filter(linea->linea.getInformacionBasica().getID().equalsIgnoreCase(idLinea)).findFirst().orElse(null);
-    }
-    
-    public Subestacion buscarSubestacion(String idSubestacion){
-        //El stream es como una banda transportadora que agarra cada linea, una por una, y mediante el .filter evalua una condicion
-        //evalua si el ID de la subestacion (que es una variable temporal de tipo Subestacion) es igual a idSubestacion que es el ID buscado, el equalsIgnoreCase compara dos cadenas pero ignora las mayusculas y minusculas
-        //se ejecuta el .findFirst cuando se encuentra la primera coincidencia, se detiene el stream y se retorna el objeto. Si no se encuentra nada, retorna null
-        return subestacionesActivas.stream().filter(linea->linea.getID().equalsIgnoreCase(idSubestacion)).findFirst().orElse(null);
-    }
-    
-    public ArrayList<LineaTransmision> filtrarLineasPorVoltaje(double voltajeFiltrado){
+    public void enlazarNuevaLinea(LineaTransmision nuevaLinea){
         
-        ArrayList<LineaTransmision> lineasFiltradas = new ArrayList<>();
+        //se crea una estructura tipo hashmap llamada mapasubestaciones
+        //donde el valor de la llave sera el nombre de la subestacion y el valor sera el objeto subestacion 
+        java.util.Map<String, Subestacion> mapaSubestaciones = new java.util.HashMap<>();
+    
+        //este ciclo se encarga de llenar el mapa recorriendo todas las subestaciones registradas       
+        for(Subestacion subestacion : subestacionesActivas){
+            //el metodo put inserta un nuevo casillero en el mapa, como llave se pasa el nombre, el trim se usa para limpiar espacio y se convierte todo a minisculas, para que quede en un mismo formato
+            //y como valor se pasa la subestacion
+            mapaSubestaciones.put(subestacion.getNombre().trim().toLowerCase(), subestacion);
+        }
+
+        //se extraen las subestaciones y se ponen en un vector
+        String[] token = nuevaLinea.getInformacionBasica().getSubestacionesRelacionadas().split("-");
+    
+        //se hace un ciclo que recorra el token con las dos subestaciones
+        for(String tokenNombre : token){
+            String nombre = tokenNombre.trim().toLowerCase();
         
-        for(LineaTransmision lineas: lineasActivas){
-            
-            if(lineas.getCapacidad().getVoltajeNominal()==voltajeFiltrado){
-                lineasFiltradas.add(lineas);
+            //y si la subestación existe, le asociamos esta nueva línea
+            if(mapaSubestaciones.containsKey(nombre)){
+                Subestacion subestacion = mapaSubestaciones.get(nombre);
+                subestacion.agregarLinea(nuevaLinea);
             }
         }
-        
-        return lineasFiltradas;
-        
     }
 
     public ArrayList<LineaTransmision> getLineasActivas(){ return lineasActivas; }

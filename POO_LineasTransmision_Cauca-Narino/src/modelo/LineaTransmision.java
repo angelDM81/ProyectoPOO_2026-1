@@ -19,7 +19,7 @@ public class LineaTransmision {
         String subestacionesRelacionadas = String.join(" - ", informacionBasica.getSubestacionesRelacionadas());
         
         //se concatenan toda la informacion de la linea de transmision en un solo string que va a ser retornando, siendo que cada valor esta separado por un ;
-        String linea = informacionBasica.getNombre()+";"+informacionBasica.getOperador()+";"+informacionBasica.getEstado()+";"+informacionBasica.getFPO()+";"+informacionBasica.getTipoConexion()+";"+
+        String linea = informacionBasica.getID()+";"+informacionBasica.getNombre()+";"+informacionBasica.getOperador()+";"+informacionBasica.getEstado()+";"+informacionBasica.getFPO()+";"+informacionBasica.getTipoConexion()+";"+
                            subestacionesRelacionadas+";"+informacionBasica.getTipoDeLinea()+";"+informacionBasica.getAcuerdoDeConexionCompartida()+";"+capacidad.getVoltajeNominal()+";"+capacidad.getVoltajeMaximo()+";"+
                            capacidad.getCorrienteNominal()+";"+capacidad.getCorrienteEmergencia()+";"+capacidad.getLimiteTermico()+";"+capacidad.getLongitudTotal()+";"+ubicacion.getDepartamento()+";"+
                            ubicacion.getMunicipio()+";"+ubicacion.getSubAreaOperativa();

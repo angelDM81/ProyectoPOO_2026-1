@@ -7,7 +7,7 @@ import javax.swing.table.DefaultTableModel;
 
 public class PanelSubEstacion extends javax.swing.JPanel {
 
-    private ContraladorSubestacion controlador = new ContraladorSubestacion();
+    private ControladorSubestacion controlador = new ControladorSubestacion();
     private ArrayList<Subestacion> subestaciones = new ArrayList<>();
     
     public PanelSubEstacion() {

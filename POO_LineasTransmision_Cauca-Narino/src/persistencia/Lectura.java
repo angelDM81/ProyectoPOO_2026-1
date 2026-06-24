@@ -1,10 +1,10 @@
-
 package persistencia;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.UUID;
 import modelo.Capacidad;
 import modelo.InformacionBasica;
 import modelo.LineaTransmision;
@@ -19,7 +19,7 @@ public class Lectura {
     private SistemaElectrico sistemaElectrico = new SistemaElectrico();
     
     public void lecturaLineasDeTransmision() {
-
+       
         File in = new File("data\\dataLineas.csv");
 
         try (BufferedReader br = new BufferedReader(new FileReader(in))){
@@ -27,20 +27,23 @@ public class Lectura {
             String s;
 
             while ((s = br.readLine()) != null) {
+                //el uuid es una manera de generas un codigo id de manera aleatoria sin repeticion y teniendo en cuenta que tomamos 8 dijitos es muy poco probable q se repita una id, tomamos slo 8 por simplicidad sin embargo podriamos tomar el uuid completo
+                //se instancia solo la primera vez para asignarle al csv la id de cada cosa y ya queda como valor de lectura
+                //String codigoUnico = UUID.randomUUID().toString().substring(0, 8);
                 
                 //sirve para validar que cuando haya lineas en blanco el programa no se explote
                 if (s.trim().isEmpty()) continue;
 
                 String token[] = s.split(";");
-                String subestacionRelacionada=token[5]; //se define un string que va a guardar las subestaciones relacionadas a la linea de transmision, para despues splitear cada subestacion y guardarla por individual en un arraylist
+                String subestacionRelacionada=token[6]; //se define un string que va a guardar las subestaciones relacionadas a la linea de transmision, para despues splitear cada subestacion y guardarla por individual en un arraylist
                 String token2[] = subestacionRelacionada.split("-"); //se define el token2, para hacer el split a las subestaciones mediante el caracter de separacion "-"
                 ArrayList<String> subestacionesRelacionadas = new ArrayList<>(); //se crea un arraylist que es el que va a guardar a ambas subestaciones
+                
                 subestacionesRelacionadas.add(token2[0].trim()); //se agregan la primera linea de transmision al arraylist de subestaciones, y trim limpia los espacios en blanco que puede haber
                 subestacionesRelacionadas.add(token2[1].trim()); //se agregan la segunda linea de transmision al arraylist de subestaciones, y trim limpia los espacios en blanco que puede haber
-                
-                Ubicacion ubicacion = new Ubicacion(token[14], token[15], token[16]);
-                InformacionBasica informacionBasica = new InformacionBasica("LT-"+(++numeroDeLinea),token[0], token[1], token[2], token[3], token[4], subestacionesRelacionadas, token[6], token[7]);
-                Capacidad capacidad = new Capacidad(Double.parseDouble(token[8].replace(".", "").replace(",", ".")), Double.parseDouble(token[9].replace(".", "").replace(",", ".")), Double.parseDouble(token[10].replace(".", "").replace(",", ".")), Double.parseDouble(token[11].replace(".", "").replace(",", ".")), Double.parseDouble(token[12].replace(".", "").replace(",", ".")), Double.parseDouble(token[13].replace(".", "").replace(",", ".")));
+                Ubicacion ubicacion = new Ubicacion(token[15], token[16], token[17]);
+                InformacionBasica informacionBasica = new InformacionBasica("LT-"+token[0],token[1], token[2], token[3], token[4], token[5], subestacionesRelacionadas, token[7], token[8]);
+                Capacidad capacidad = new Capacidad(Double.parseDouble(token[9].replace(",", ".")), Double.parseDouble(token[10].replace(",", ".")), Double.parseDouble(token[11].replace(",", ".")), Double.parseDouble(token[12].replace(",", ".")), Double.parseDouble(token[13].replace(",", ".")), Double.parseDouble(token[14].replace(",", ".")));
                 LineaTransmision lineaTransmision = new LineaTransmision(informacionBasica, capacidad, ubicacion);
                 sistemaElectrico.agregarLineasActivas(lineaTransmision);
                 
@@ -58,17 +61,18 @@ public class Lectura {
         File in = new File("data\\dataSubestaciones.csv");
         
         try(BufferedReader br = new BufferedReader(new FileReader(in))){
-            
+                            
             String s;
             
             while((s=br.readLine())!=null){
-                
+                //el uuid es una manera de generas un codigo id de manera aleatoria sin repeticion y teniendo en cuenta que tomamos 8 dijitos es muy poco probable q se repita una id, tomamos slo 8 por simplicidad sin embargo podriamos tomar el uuid completo
+                //String codigoUnico = UUID.randomUUID().toString().substring(0, 8);
                 //sirve para validar que cuando haya lineas en blanco el programa no se explote
                 if (s.trim().isEmpty()) continue;
                
                 String token[] = s.split(";");
-                String voltajeNominal=token[1]; //se define un String que guarda los voltajes nominales que tiene la subestacion porque a veces son mas de 1
-                String operador=token[2]; //se define otro string que guarda los operadores de la subestacion, porque tambien pueden ser mas de 1
+                String voltajeNominal=token[2]; //se define un String que guarda los voltajes nominales que tiene la subestacion porque a veces son mas de 1
+                String operador=token[3]; //se define otro string que guarda los operadores de la subestacion, porque tambien pueden ser mas de 1
                 String token2[] = voltajeNominal.split("-"); //se define el token2 que separa los voltajes en caso de que haya mas de 1
                 String token3[] = operador.split("-"); //se define el token 3 que separa los operadores en caso de que haya mas de 1
                 
@@ -85,8 +89,8 @@ public class Lectura {
                     operadores.add(token3[i].trim());
                 }
                 
-                Ubicacion ubicacion = new Ubicacion(token[3], token[4], token[5]);
-                Subestacion subestacion = new Subestacion("Sub-"+(++numeroDeSubestacion), token[0], voltajesNominales, operadores, ubicacion, 0, 0);
+                Ubicacion ubicacion = new Ubicacion(token[4], token[5], token[6]);
+                Subestacion subestacion = new Subestacion("SUB-"+token[0], token[1], voltajesNominales, operadores, ubicacion, 0, 0);
                 sistemaElectrico.agregarSubestacionesActivas(subestacion);        
                 
             }

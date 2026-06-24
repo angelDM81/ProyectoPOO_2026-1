@@ -1,12 +1,17 @@
 package controlador;
 
 import java.util.ArrayList;
+import modelo.Capacidad;
+import modelo.InformacionBasica;
 import modelo.LineaTransmision;
 import modelo.SistemaElectrico;
+import modelo.Ubicacion;
+import persistencia.Escritura;
 
 public class ControladorLinea {
     
     private SistemaElectrico sistemaElectrico = new SistemaElectrico();
+    private Escritura escritura = new Escritura();
     
     public ArrayList<LineaTransmision> obtenerLineaTransmision(){
         return sistemaElectrico.getLineasActivas();
@@ -47,5 +52,35 @@ public class ControladorLinea {
         }
      
         return longitudTotal;
+    }
+    
+    public LineaTransmision buscarLinea(String idBuscar){
+        
+        //se hace un for para buscar la linea de transmision en base a la id
+        for(LineaTransmision linea: obtenerLineaTransmision()){
+            if(linea.getInformacionBasica().getID().equals(idBuscar)){
+                return linea;
+            }
+        }
+        
+        return null;
+    }
+    
+    public void borrarLinea(String idBuscar){
+        
+        //se borra la linea de transmision del arrayList general del sistema electrico
+        sistemaElectrico.eliminarLineaActiva(buscarLinea(idBuscar));
+        //se reescribe el csv en base al arrayList anteriormente actualizado
+        escritura.actualizarArchivoLineasDeTransmision(obtenerLineaTransmision());
+        
+    }
+    
+    public void crearLinea(InformacionBasica informacionBasica, Capacidad capacidad, Ubicacion ubicacion){
+        
+        LineaTransmision lineaTransmision = new LineaTransmision(informacionBasica, capacidad, ubicacion);
+        escritura.guardarNuevaLineaDeTransmision(lineaTransmision);
+        sistemaElectrico.agregarLineasActivas(lineaTransmision);
+        sistemaElectrico.enlazarNuevaLinea(lineaTransmision);
+        
     }
 }
